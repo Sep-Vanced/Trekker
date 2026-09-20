@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* ── Sidebar Scrollbar Styling ── */
+aside::-webkit-scrollbar {
+  width: 8px;
+}
+
+aside::-webkit-scrollbar-track {
+  background: rgba(17, 187, 99, 0.18); /* soft base tint of #11BB63 */
+  border-radius: 10px;
+}
+
+aside::-webkit-scrollbar-thumb {
+  background: #11BB63;
+  border-radius: 10px;
+  border: 2px solid rgba(12, 131, 69, 0.4);
+}
+
+aside::-webkit-scrollbar-thumb:hover {
+  background: #0fae5b;
+}
+
+/* Firefox */
+aside {
+  scrollbar-width: thin;
+  scrollbar-color: #11BB63 rgba(17, 187, 99, 0.18);
+}

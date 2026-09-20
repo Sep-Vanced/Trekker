@@ -1,0 +1,63 @@
+# --- Environment secrets (all sub-projects) ---
+**/.env
+**/.env.local
+**/.env.*.local
+**/.env.development
+**/.env.production
+
+# --- Dependencies ---
+**/node_modules/
+**/.pnp
+**/.pnp.js
+
+# --- Build outputs ---
+admin/dist/
+web/.next/
+web/out/
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+
+# --- Logs ---
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/*.log
+
+# --- Django (server) ---
+server/db.sqlite3
+server/db.sqlite3-journal
+server/__pycache__/
+server/**/__pycache__/
+server/**/*.pyc
+server/staticfiles/
+server/media/
+server/venv/
+server/.venv/
+
+# --- Prisma / Next.js (web) ---
+web/prisma/*.db
+web/prisma/dev.db
+web/.env
+web/next-env.d.ts
+
+# --- IDE / editor ---
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# --- Mobile (Expo/React Native) ---
+mobile/.idea/
+mobile/*.orig.*
+mobile/*.jks
+mobile/*.p8
+mobile/*.p12
+mobile/*.key
+mobile/*.mobileprovision
+
+# --- Misc ---
+*.swp
+*.swo
+.env.backup
