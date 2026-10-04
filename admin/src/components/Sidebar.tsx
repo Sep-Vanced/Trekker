@@ -15,26 +15,39 @@ import {
   ChevronRight,
   LogOut,
   ShieldCheck,
+  type LucideIcon,
 } from "lucide-react";
 
-const menuItems = [
+type MenuItem = {
+  name: string;
+  path: string;
+  Icon: LucideIcon;
+  // set to true to hide the item from the sidebar (page not built yet)
+  hidden?: boolean;
+};
+
+const menuItems: MenuItem[] = [
   { name: "Dashboard", path: "/", Icon: LayoutDashboard },
   { name: "Live Map", path: "/map", Icon: Map },
-  { name: "Tourists", path: "/tourists", Icon: Users },
+  { name: "Tourists", path: "/tourists", Icon: Users, hidden: true },
   { name: "Emergency", path: "/emergency", Icon: Siren },
   { name: "Weather", path: "/weather", Icon: CloudRain },
   { name: "Vehicles", path: "/vehicles", Icon: Truck },
-  { name: "Routes", path: "/routes", Icon: Route },
-  { name: "Alerts", path: "/alerts", Icon: Bell },
-  { name: "Offline", path: "/offline", Icon: WifiOff },
-  { name: "Analytics", path: "/analytics", Icon: BarChart3 },
+  { name: "Routes", path: "/routes", Icon: Route, hidden: true },
+  { name: "Alerts", path: "/alerts", Icon: Bell, hidden: true },
+  { name: "Offline", path: "/offline", Icon: WifiOff, hidden: true },
+  { name: "Analytics", path: "/analytics", Icon: BarChart3, hidden: true },
 ];
 
+// Hidden items are filtered out, and a section with no visible items
+// (e.g. "System" while Analytics is hidden) is dropped entirely.
 const sections = [
   { label: "Operations", items: menuItems.slice(0, 5) },
   { label: "Management", items: menuItems.slice(5, 9) },
   { label: "System", items: menuItems.slice(9) },
-];
+]
+  .map((s) => ({ ...s, items: s.items.filter((i) => !i.hidden) }))
+  .filter((s) => s.items.length > 0);
 
 const Sidebar = () => {
   const navigate = useNavigate();

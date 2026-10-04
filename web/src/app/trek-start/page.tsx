@@ -39,8 +39,12 @@ function toLocalISO(
   return `${dateStr}T${timeStr}:00${tzOffset}`;
 }
 
+// YYYY-MM-DD in Manila time (consistent with the +08:00 offset in toLocalISO).
+// Avoid toISOString() here: it's UTC, so between 12AM-8AM PH time it returns "yesterday".
 function today(): string {
-  return new Date().toISOString().split("T")[0];
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Manila" }).format(
+    new Date(),
+  );
 }
 
 function TrekStartContent() {
@@ -62,7 +66,6 @@ function TrekStartContent() {
   const [entryTime, setEntryTime] = useState("06:00");
   const [exitDate, setExitDate] = useState(today());
   const [exitTime, setExitTime] = useState("14:00");
-  const [groupSize, setGroupSize] = useState("1");
   const [age, setAge] = useState("");
   const [citizen, setCitizen] = useState("");
   const [place, setPlace] = useState("");
@@ -97,10 +100,10 @@ function TrekStartContent() {
     if (!entryTime) errors.entryTime = "Required";
     if (!exitDate) errors.exitDate = "Required";
     if (!exitTime) errors.exitTime = "Required";
-    const gs = parseInt(groupSize);
-    if (!groupSize || isNaN(gs) || gs < 1)
-      errors.groupSize = "Must be at least 1";
-    if (gs > 50) errors.groupSize = "Maximum group size is 50";
+    if (entryDate && entryDate < today())
+      errors.entryDate = "Entry date can't be in the past";
+    if (exitDate && entryDate && exitDate < entryDate)
+      errors.exitDate = "Exit date can't be before entry date";
     const a = parseInt(age);
     if (!age || isNaN(a) || a < 1) errors.age = "Required";
     if (a > 120) errors.age = "Invalid age";
@@ -109,9 +112,11 @@ function TrekStartContent() {
     const px = parseInt(pax);
     if (!pax || isNaN(px) || px < 1) errors.pax = "Must be at least 1";
     if (px > 50) errors.pax = "Maximum is 50";
-    const entry = new Date(toLocalISO(entryDate, entryTime));
-    const exit = new Date(toLocalISO(exitDate, exitTime));
-    if (exit <= entry) errors.exitTime = "Exit must be after entry";
+    if (entryDate && entryTime && exitDate && exitTime) {
+      const entry = new Date(toLocalISO(entryDate, entryTime));
+      const exit = new Date(toLocalISO(exitDate, exitTime));
+      if (exit <= entry) errors.exitTime = "Exit must be after entry";
+    }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -133,7 +138,9 @@ function TrekStartContent() {
           route_id: Number(routeId),
           planned_entry: toLocalISO(entryDate, entryTime),
           planned_exit: toLocalISO(exitDate, exitTime),
-          group_size: parseInt(groupSize),
+          // Group Size was removed from the UI; keep it in sync with pax
+          // since the backend/DB still stores group_size.
+          group_size: parseInt(pax),
           age: parseInt(age),
           citizen: citizen.trim(),
           place: place.trim(),
@@ -347,7 +354,13 @@ function TrekStartContent() {
                   <input
                     type="date"
                     value={entryDate}
-                    onChange={(e) => setEntryDate(e.target.value)}
+                    min={today()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEntryDate(val);
+                      // if exit is now earlier than the new entry, move it along
+                      if (val && exitDate < val) setExitDate(val);
+                    }}
                     className={`w-full bg-parchment-100 border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-canopy-400 ${fieldErrors.entryDate ? "border-rust-400" : "border-bark-100"}`}
                   />
                 </div>
@@ -360,6 +373,9 @@ function TrekStartContent() {
                   />
                 </div>
               </div>
+              {fieldErrors.entryDate && (
+                <p className="text-rust-500 text-xs -mt-2 mb-3">{fieldErrors.entryDate}</p>
+              )}
 
               <div className="h-px bg-bark-100 my-3" />
 
@@ -371,6 +387,7 @@ function TrekStartContent() {
                   <input
                     type="date"
                     value={exitDate}
+                    min={entryDate || today()}
                     onChange={(e) => setExitDate(e.target.value)}
                     className={`w-full bg-parchment-100 border rounded-xl px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-canopy-400 ${fieldErrors.exitDate ? "border-rust-400" : "border-bark-100"}`}
                   />
@@ -384,6 +401,9 @@ function TrekStartContent() {
                   />
                 </div>
               </div>
+              {fieldErrors.exitDate && (
+                <p className="text-rust-500 text-xs mt-2">{fieldErrors.exitDate}</p>
+              )}
               {fieldErrors.exitTime && (
                 <p className="text-rust-500 text-xs mt-2">{fieldErrors.exitTime}</p>
               )}
@@ -459,43 +479,6 @@ function TrekStartContent() {
                   Group Details
                 </span>
               </div>
-
-              <p className="text-[12px] font-bold text-bark-500 uppercase tracking-[0.8px] mb-2">
-                Group Size *
-              </p>
-              <div className="flex flex-row items-center gap-3 mb-3">
-                <button
-                  onClick={() =>
-                    setGroupSize((v) => String(Math.max(1, parseInt(v || "1") - 1)))
-                  }
-                  className="w-10 h-10 rounded-full bg-parchment-100 border border-bark-100 flex items-center justify-center hover:bg-parchment-200 transition-colors"
-                >
-                  <Minus size={16} className="text-bark-700" />
-                </button>
-                <input
-                  type="number"
-                  value={groupSize}
-                  onChange={(e) =>
-                    setGroupSize(e.target.value.replace(/[^0-9]/g, ""))
-                  }
-                  className={`flex-1 bg-parchment-100 border rounded-xl px-3 py-3 text-sm text-center font-bold focus:outline-none focus:ring-2 focus:ring-canopy-400 ${fieldErrors.groupSize ? "border-rust-400" : "border-bark-100"}`}
-                />
-                <button
-                  onClick={() =>
-                    setGroupSize((v) =>
-                      String(Math.min(50, parseInt(v || "1") + 1)),
-                    )
-                  }
-                  className="w-10 h-10 rounded-full bg-parchment-100 border border-bark-100 flex items-center justify-center hover:bg-parchment-200 transition-colors"
-                >
-                  <Plus size={16} className="text-bark-700" />
-                </button>
-              </div>
-              {fieldErrors.groupSize && (
-                <p className="text-rust-500 text-xs -mt-2 mb-3">{fieldErrors.groupSize}</p>
-              )}
-
-              <div className="h-px bg-bark-100 my-3" />
 
               <p className="text-[12px] font-bold text-bark-500 uppercase tracking-[0.8px] mb-2">
                 Pax (Group Members) *
@@ -658,19 +641,6 @@ function TrekStartContent() {
                         {new Date(
                           registration.registration.planned_exit,
                         ).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex flex-row items-start gap-3">
-                    <div className="w-7 h-7 rounded-lg bg-parchment-200 flex items-center justify-center mt-0.5">
-                      <Users size={13} className="text-bark-500" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] text-bark-500 font-bold uppercase tracking-[0.5px]">
-                        Group Size
-                      </p>
-                      <p className="text-sm text-bark-900 font-semibold">
-                        {registration.registration.group_size} person(s)
                       </p>
                     </div>
                   </div>
